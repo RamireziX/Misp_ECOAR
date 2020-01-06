@@ -26,157 +26,113 @@ fsize:	.word -1
 ptrn:
 	.byte 0, 0, 0, 0, 0, 0, 0, 0
 pResult:
-	.space 100
-	
-	
-	
-	
-	
-
-
-fbuf: .space 44000
+	.space 100	
+fbuf: 
+	.space 44000
 
   .text
   
 main:
 
-  la $a0, fname
-  li $a1, 0
-  li $a2, 0
-  li $v0, 13 		#open file read only
-  syscall
+ 	la 	$a0, fname
+ 	li 	$a1, 0
+ 	li 	$a2, 0
+ 	li	$v0, 13 		#open file read only
+ 	syscall
   
-  move 	$a0, $v0
-  la 	$a1, fbuf
-  li 	$a2, 44000
-  li 	$v0, 14   		#read file
-  syscall
+  	move 	$a0, $v0
+  	la 	$a1, fbuf
+  	li 	$a2, 44000
+  	li 	$v0, 14   		#read file
+  	syscall
   
-  li $v0, 16		#close the file
-  syscall
+  	li	 $v0, 16		#close the file
+  	syscall
+  
+  	la	 $s0, fbuf
+  
+  	#get filesize
+  
+  	lbu	$t0, 2($s0)
+  	lbu 	$t1, 3($s0)
+  	lbu 	$t2, 4($s0)
+  	lbu	$t3, 5($s0)
+ 
+  	sll 	$t1, $t1, 8
+  	sll 	$t2, $t2, 16
+  	sll 	$t3, $t3, 24
+ 
+  	or 	$t3, $t3, $t2
+  	or 	$t3, $t3, $t1
+  	or 	$t3, $t3, $t0
+ 
+  	sw	$t3, fsize
+
+  	#get width
+
+  	lbu 	$t0, 18($s0)
+  	lbu 	$t1, 19($s0)
+  	lbu 	$t2, 20($s0)
+  	lbu 	$t3, 21($s0)
+
+ 
+  	sll	$t1, $t1, 8
+  	sll 	$t2, $t2, 16
+  	sll 	$t3, $t3, 24
+ 
+  	or 	$t3, $t3, $t2
+  	or 	$t3, $t3, $t1
+  	or 	$t3, $t3, $t0
+
+  	sw	$t3, w
+  
+ 	#get height 
+ 
+  	lbu 	$t0, 22($s0)
+  	lbu 	$t1, 23($s0)
+  	lbu 	$t2, 24($s0)
+  	lbu 	$t3, 25($s0)
+ 
+  	sll 	$t1, $t1, 8
+  	sll 	$t2, $t2, 16
+  	sll 	$t3, $t3, 24
+ 
+  	or 	$t3, $t3, $t2
+  	or 	$t3, $t3, $t1
+  	or 	$t3, $t3, $t0
+ 
+  	sw	$t3, h
   
   
-  
-#  move $a0, $v0
-#  li $v0, 1
-#  syscall
-  
-  
-  
-  la $s0, fbuf
-  
- 
-  
-# li $a0, 0x000000FF 
-  
- lbu $t0, 2($s0)
- lbu $t1, 3($s0)
- lbu $t2, 4($s0)
- lbu $t3, 5($s0)
- 
- #and $t0, $t0, $a0
- #and $t1, $t1, $a0
- #and $t2, $t2, $a0
- #and $t3, $t3, $a0
- 
- sll $t1, $t1, 8
- sll $t2, $t2, 16
- sll $t3, $t3, 24
- 
- or $t3, $t3, $t2
- or $t3, $t3, $t1
- or $t3, $t3, $t0
- 
- sw	$t3, fsize
- 
- 
- 
- 
- 
- lbu $t0, 18($s0)
- lbu $t1,  19($s0)
- lbu $t2, 20($s0)
- lbu $t3, 21($s0)
- 
- #and $t0, $t0, $a0
- #and $t1, $t1, $a0
- #and $t2, $t2, $a0
- #and $t3, $t3, $a0
- 
- sll $t1, $t1, 8
- sll $t2, $t2, 16
- sll $t3, $t3, 24
- 
- or $t3, $t3, $t2
- or $t3, $t3, $t1
- or $t3, $t3, $t0
- 
-  sw	$t3, w
- 
- 
-  lbu $t0, 22($s0)
- lbu $t1,  23($s0)
- lbu $t2, 24($s0)
- lbu $t3, 25($s0)
- 
- #and $t0, $t0, $a0
- #and $t1, $t1, $a0
- #and $t2, $t2, $a0
- #and $t3, $t3, $a0
- 
- sll $t1, $t1, 8
- sll $t2, $t2, 16
- sll $t3, $t3, 24
- 
- or $t3, $t3, $t2
- or $t3, $t3, $t1
- or $t3, $t3, $t0
- 
- sw	$t3, h
- 
  shift:
- lbu $t0, 10($s0)
- lbu $t1,  11($s0)
- lbu $t2, 12($s0)
- lbu $t3, 13($s0)
+  	lbu 	$t0, 10($s0)
+  	lbu 	$t1, 11($s0)
+  	lbu 	$t2, 12($s0)
+  	lbu 	$t3, 13($s0)
+
+  	sll 	$t1, $t1, 8
+ 	sll 	$t2, $t2, 16
+  	sll 	$t3, $t3, 24
  
- #and $t0, $t0, $a0
- #and $t1, $t1, $a0
- #and $t2, $t2, $a0
- #and $t3, $t3, $a0
+  	or 	$t3, $t3, $t2
+  	or 	$t3, $t3, $t1
+  	or 	$t3, $t3, $t0
  
- sll $t1, $t1, 8
- sll $t2, $t2, 16
- sll $t3, $t3, 24
+  	addu 	$s0, $s0, $t3			#move to the start of bitmap
  
- or $t3, $t3, $t2
- or $t3, $t3, $t1
- or $t3, $t3, $t0
+ widthBytes:
+  	lw	$t0, w
+  	addiu 	$t0, $t0, 7
+  	srl 	$t0, $t0, 3
+  	addiu 	$t0, $t0, 3
+  	srl 	$t0, $t0, 2
+  	sll	$t0, $t0, 2
  
-# move	$a0, $t3
-#li	$v0, 1
-#syscall
- 
- addu $s0, $s0, $t3			#przesuniecie na poczatek bitmapy
- 
- 
- 
- szerokoscbajtowo:
- 
- 
- lw $t0, w
- addiu $t0, $t0, 7
- srl $t0, $t0, 3
- addiu $t0, $t0, 3
- srl $t0, $t0, 2
- sll $t0, $t0, 2
- 
- sw $t0, wbytes
+  	sw $t0, wbytes
  
  #s0 - poczatek danych 
  
 #Point* FindPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pResult);
- 
  
  	li	$t1, 5			#sx
  	li	$t2, 6 			#sy
@@ -188,43 +144,23 @@ main:
  	la	$a2, ptrn
  	la	$a3, pResult
  	
- 	
- 
  	jal	FindPattern
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	#li	$v0, 1
-	#li	$a0, 13
-	#syscall 	
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-
-
-
 
 end:
   	li $v0, 10		#end program
   	syscall
   
+#a0 - imgInfo* pImg
+#a1 - pSize
+#a2 - pattern
+#a3 - table where coordinates will be stored
 
 FindPattern:
 	sub 	$sp, $sp, 4		#push $ra to the stack
 	sw 	$ra, 4($sp)
 	
-	
+
+
 	
 	
 	
