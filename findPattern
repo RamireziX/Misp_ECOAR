@@ -23,6 +23,11 @@ pImg:	.word 0
 wbytes:	.word 32
 fsize:	.word -1
 
+analyze_data:					.word 	0,0,0,0,0,0,0,0
+start_lines:					.word	0,0,0,0,0,0,0,0
+next_byte_to_read_per_line:		.word	0,0,0,0,0,0,0,0
+		
+
 ptrn:
 	.byte 0, 0, 0, 0, 0, 0, 0, 0
 pResult:
@@ -50,8 +55,45 @@ main:
   	syscall
   
   	la	 $s0, fbuf
+
+  	
+ 
+ #s0 - poczatek danych 
+ 
+#Point* FindPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pResult);
+ 
+ 	li	$t1, 5			#sx
+ 	li	$t2, 6 			#sy
+ 	sll	$t1, $t1, 8
+ 	or	$t1, $t1, $t2
+ 
+ 	la	$a0, pImg
+ 	move	$a1, $t1
+ 	la	$a2, ptrn
+ 	la	$a3, pResult
+ 	
+ 	jal	FindPattern
+
+end:
+  	li $v0, 10		#end program
+  	syscall
   
-  	#get filesize
+#a0 - imgInfo* pImg
+#a1 - pSize
+#a2 - pattern
+#a3 - table where coordinates will be stored
+
+FindPattern:
+	sub 	$sp, $sp, 4		#push $ra to the stack
+	sw 	$ra, 4($sp)
+	
+	#addiu 	$sp, $sp, -32		#room on stack for workspace
+	
+	#addiu	$sp, $sp, -32		#room for addrresses
+	
+	
+	move	$s0, $a0
+	#get filesize
   
   	lbu	$t0, 2($s0)
   	lbu 	$t1, 3($s0)
@@ -119,57 +161,117 @@ main:
   	or 	$t3, $t3, $t0
  
   	addu 	$s0, $s0, $t3			#move to the start of bitmap
+#s0 - poczatek bitmapy
  
  widthBytes:
-  	lw	$t0, w
+  	lw		$t0, w
   	addiu 	$t0, $t0, 7
   	srl 	$t0, $t0, 3
   	addiu 	$t0, $t0, 3
   	srl 	$t0, $t0, 2
-  	sll	$t0, $t0, 2
+  	sll		$t0, $t0, 2
  
-  	sw $t0, wbytes
- 
- #s0 - poczatek danych 
- 
-#Point* FindPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pResult);
- 
- 	li	$t1, 5			#sx
- 	li	$t2, 6 			#sy
- 	sll	$t1, $t1, 8
- 	or	$t1, $t1, $t2
- 
- 	la	$a0, pImg
- 	move	$a1, $t1
- 	la	$a2, ptrn
- 	la	$a3, pResult
- 	
- 	jal	FindPattern
+  	sw 		$t0, wbytes
+	
+	move	$t1, $s0
 
-end:
-  	li $v0, 10		#end program
-  	syscall
-  
-#a0 - imgInfo* pImg
-#a1 - pSize
-#a2 - pattern
-#a3 - table where coordinates will be stored
-
-FindPattern:
-	sub 	$sp, $sp, 4		#push $ra to the stack
-	sw 	$ra, 4($sp)
+#t1 - adres poczatku wiersza
+#t2 - wysokosc wzorca
+#t3 - gdzie zapisujemy dane
 	
 
+	move	$t2, $a1
+	andi	$t2, 0x000000FF
+	move	$s7, $t2																					##$s7 - wysokosc wzorca, nie ruszac
+	
+	move	$t1, $a1
+	srl		$t1, $t1, 8
+	andi	$t1, 0x000000FF
+	move	$s6, $t1
+	
+	
+	## s6 - szerokoc wzorca
 
 	
+	move	$t9, $zero
+	li		$t8, 1
+	sll		$t8, $t8, 15
+	move	$t7, $s6
+	
+	
+build_mask:	
+	or		$t9, $t9, $t8
+	srl		$t8, $t8, 1
+	subiu	$t7, $t7, 1
+	bgtz	$t7, build_mask
+	
+	move	$s5, $t9														## s5 - maska
 	
 	
 	
-	#dzialamy
+	la	$t3, start_lines
+	move	$t1, $s0
 	
-	lw 	$ra, 4($sp)		#restore (pop) $ra
+zapisz_poczatki_linii:
+	sw			$t1, ($t3)
+	addiu		$t3, $t3, 4
+	addu		$t1, $t1, $t0							#adres poczatku kolejnego wiersza
+	sub			$t2, $t2, 1
+	bgtz		$t2, zapisz_poczatki_linii
+	
+	
+	
+	
+	
+	la			$t3, start_lines
+	la			$t5, analyze_data
+	move		$t6, $s7
+	la			$t7, next_byte_to_read_per_line	
+
+store_data:	
+	lw			$t1, ($t3)								#t1 - poczatek wiersza 
+	addiu		$t3, $t3, 4
+	
+	move		$t4, $zero
+	
+	lbu			$t4, 0($t1)
+	addiu		$t1, $t1, 1
+
+	sll			$t4, $t4, 8
+
+	lbu			$t4, ($t1)
+	addiu		$t1, $t1, 1
+	
+	sw			$t4, ($t5)
+	sw			$t1, ($t7)
+	
+	
+	addiu		$t5, $t5, 4
+	addiu		$t7, $t7, 4
+	
+	subiu		$t6, $t6, 1
+	bgtz		$t6, store_data
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	
+	lw 		$ra, 4($sp)		#restore (pop) $ra
 	add 	$sp, $sp, 4
-	jr 	$ra
+	jr 		$ra
 
 
 
