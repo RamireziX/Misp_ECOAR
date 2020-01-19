@@ -15,6 +15,7 @@
   
   .data
 fname:  .asciiz "src_001.bmp"
+fnameout:  .asciiz "src_002.bmp"
 
 imgInfo:
 w:	.word 32
@@ -31,7 +32,7 @@ next_byte_to_read_per_line:		.word	0,0,0,0,0,0,0,0
 ptrn:
 	.byte 0, 0, 0, 0, 0, 0, 0, 0
 pResult:
-	.space 100	
+	.space 1024	
 fbuf: 
 	.space 44000
 
@@ -67,12 +68,63 @@ main:
  	sll	$t1, $t1, 8
  	or	$t1, $t1, $t2
  
- 	la	$a0, pImg
+ 	la	$a0, fbuf
  	move	$a1, $t1
  	la	$a2, ptrn
  	la	$a3, pResult
  	
  	jal	FindPattern
+	
+	
+	move		$s0, $v0
+	move		$s1, $v1
+	
+	
+	move		$a0, $s1
+	li			$v0, 1
+	syscall
+	
+	li			$a0, 10
+	li			$v0, 11
+	syscall
+	
+#	lw			$a0, ($s0)
+#	li			$v0, 1
+#	syscall
+	
+	li			$a0, 10
+	li			$v0, 11
+	syscall
+	
+	add			$s0, $s0, 4
+	
+	
+#	lw			$a0, ($s0)
+#	li			$v0, 1
+#	syscall
+	
+	li			$a0, 10
+	li			$v0, 11
+	syscall
+	
+	la 	$a0, fnameout
+ 	li 	$a1, 1		#open file read only
+ 	li 	$a2, 0
+ 	li	$v0, 13 		
+ 	syscall
+	
+	
+	
+	move 	$a0, $v0
+  	la 	$a1, fbuf
+  	li 	$a2, 44000
+  	li 	$v0, 15   		#save file
+  	syscall
+	
+	
+	
+	
+	
 
 end:
   	li $v0, 10		#end program
@@ -182,7 +234,7 @@ FindPattern:
 
 	move	$t2, $a1
 	andi	$t2, 0x000000FF
-	move	$s7, $t2																					##$s7 - wysokosc wzorca, nie ruszac
+	move	$s7, $t2																					##$s7 - 
 	
 	move	$t1, $a1
 	srl		$t1, $t1, 8
@@ -205,7 +257,39 @@ build_mask:
 	subiu	$t7, $t7, 1
 	bgtz	$t7, build_mask
 	
-	move	$s5, $t9														## s5 - maska
+	move	$s5, $t9														
+
+#a0 - wolne
+#a1 - licznik punktow
+#a2 - pattern
+#a3 - adres potencjalnego punktu
+
+#t0 - wynik maskowania
+#t1 - temp
+#t2 - 
+#t3 - 
+#t4 - licznik pikseli w poziomie
+#t5 - 
+#t6 - 
+#t7 - 
+#t8 - pole szukania pionowo
+#t9 - 
+
+#s0 - 
+#s1 - 
+#s2 - 
+#s3 - 
+#s4 - 
+#s5 - maska, stala
+#s6 - szerokosc wzorca, nie ruszac
+#s7 - wysokosc wzorca, nie ruszac
+
+
+
+
+	
+	
+## s5 - maska
 	
 
 #start_lines - adresy poczatku linii
@@ -226,14 +310,16 @@ zapisz_poczatki_linii:
 	
 	
 	
-	la			$t3, start_lines
-	la			$t5, analyze_data
+	la			$t3, start_lines						#istnieje 
+	la			$t5, analyze_data						
 	move		$t6, $s7
-	la			$t7, next_byte_to_read_per_line
+	la			$t7, next_byte_to_read_per_line			#adres
 	
 
 store_data:	
 	lw			$t1, ($t3)								#t1 - poczatek wiersza 
+	
+	
 	addiu		$t3, $t3, 4
 	
 	move		$t4, $zero
@@ -259,46 +345,55 @@ store_data:
 	
 	
 	
-	
-	
-#	t4 - licznik w poziomie
+#a1 - 
+#t4 - licznik w poziomie
+#t9 - licznik w pionie
+
+
 	lw			$t4, w
 	sub			$t4, $t4, $s6
-	addiu		$t4, $t4, 1
+	addi		$t4, $t4, 1
 	
-	
+	move		$t9, $zero
+	subi		$t9, $t9, 1
 	
 	
 	la			$t3, start_lines
-	la			$t7, next_byte_to_read_per_line
-	li			$t9, 0		
-	move		$t8, $s7
-	move		$s4, $a2
-	move		$t2, $s7												#zliczanie wysokosci
+	la			$t7, next_byte_to_read_per_line	
 	
-	li			$s3, 1
+	move		$t2, $s7												#zliczanie wysokosci, wzorca
+	
+
+#ustalenie wysokosci przeszukiwania	
+	lw			$t8, h
+	subu		$t8, $t8, $s7
+	addiu		$t8, $t8, 1
+	
+	move		$v1, $zero
+	
+
 	
 kolejna_linia:
 	#zwiekszenie wartosci
 
+	addi		$t9, $t9, 1					#
+	move		$a1, $zero					#a1 - licznik pikseli w prawo, od 0	
+	
+	
+poziomo:		#przesuniecie okna porownania w prawo o 1 piksel
+	
+	la			$t5, analyze_data			
+	la			$t7, next_byte_to_read_per_line
+	
+	
+	
+	
+	move		$s4, $a2												#ustawienie na poczatek paterna
+	li			$s3, 1
+	
+	
 
-
-
-
 	
-	
-	
-poziomo:																#
-	addiu		$t9, $t9, 1
-	andi		$t9, $t9, 0x00000007
-	
-	subiu		$t4, $t4, 1
-	
-	
-	la			$t5, analyze_data
-	
-
-
 pionowo:
 
 	lw			$t6, ($t5)												#wczytanie dla i-tego wiersza
@@ -307,88 +402,99 @@ pionowo:
 	#
 	sll			$t6, $t6, 1
  
-	bgtz		$t9, nie_wczytuj_bajtu
-wczytaj_kolejny_bajt:
+ 
+
+ 
+ 	move		$s2, $a1
+	andi		$s2, $s2, 0x00000007
+	bne			$s2, 0x00000007, nie_wczytuj_bajtu
+	#j			nie_wczytuj_bajtu
+#wczytaj_kolejny_bajt:
+	#addiu		$t7, $t7, 4
 	lw			$s2, ($t7)
+	
 	lbu			$t6, ($s2)
+	move		$t6, $zero
+	sb			$t6, ($s2)
+	
+
 	addiu		$s2, $s2, 1
 	sw			$s2, ($t7)
-	addiu		$t7, $t7, 1
+	addiu		$t7, $t7, 4
+	
+	
+	
+	
+	
+	
+	#j 			enddddddddddddddddddddddddd
 	
 nie_wczytuj_bajtu:	
 	sw			$t6, ($t5)
-	addiu		$t5, $t5, 1												#przesuniecie adresu dla kolejnego wiersza
+	addiu		$t5, $t5, 4												#przesuniecie adresu dla kolejnego wiersza
 	
 	beqz		$s3, nie_maskowanie
 maskowanie:
 	and			$t0, $t0, $s5
-	srl			$t0, $t0, 8
 	lbu			$t1, ($s4)
+	sll			$t1, $t1, 8
+	and			$t1, $t1, $s5
+
+	
+	
+	
+	
+	
+	
 	beq			$t0, $t1, nie_maskowanie
-niepasuje:	
-	li			$s3, 0
+
+#niepasuje:	
+	move		$s3, $zero
 nie_maskowanie:
 
-	addiu		$s4, $s4, 1
-	subiu		$t2, $t2, 1
+	addi		$s4, $s4, 1
+	subi		$t2, $t2, 1
 	
 	bgtz		$t2, pionowo
 	
+	move		$t2, $s7
+	
+	
+	
+	#j			enddddddddddddddddddddddddd
+	
+	#la			$t7, next_byte_to_read_per_line
+	
 #tu przeszlismy caly wzorzec pionowo
-	beqz		$s3, poziomo
+	beqz		$s3, test_poziomo
+zapisz_punkt:
+#a3 - 
+	#sw			$a1, ($a3)
+	addiu		$a3, $a3, 4
 	
+	#sw			$t9, ($a3)
+	addiu		$a3, $a3, 4
 	
-	bgtz		$t4, poziomo
+	addiu		$v1, $v1, 1
 	
+test_poziomo:	
+
+	#la			$t7, next_byte_to_read_per_line			
 	
-#ponownie wczytac $t4	
+	addiu		$a1, $a1, 1
+	#blt			$a1, $t4, poziomo
+	blt		$a1, 700, poziomo
 	
-	
-	
-	
-	
-	
-	
-	
-	
-zapis:
-	
+#ponownie wczytac $t4
 
 
 
-	
-	
-	
-	
-	
-	
-	
-	
 
+	#blt			$t9, $t8, kolejna_linia
 	
+	la			$v0, pResult
 	
-#t2
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
-	
+enddddddddddddddddddddddddd:
 	lw 		$ra, 4($sp)		#restore (pop) $ra
 	add 	$sp, $sp, 4
 	jr 		$ra
