@@ -30,12 +30,12 @@ wbytes:	.word 32
 fsize:	.word -1
 
 analyze_data:					.word 	0,0,0,0,0,0,0,0
-wzorce:							.word 	0,0,0,0,0,0,0,0
+pattern:							.word 	0,0,0,0,0,0,0,0
 		
 
 ptrn:
 	#.byte 0x00, 0x1B, 0x1B, 0x1B, 0x1B, 0x03, 0, 0	#letter i	x5 y6 	
-	.byte 0x43, 0x7d, 0x7d, 0x41, 0x3d, 0x3d, 0x3d, 0x40	#letter g x7 y8														#wzorzec od dolu
+	.byte 0x43, 0x7d, 0x7d, 0x41, 0x3d, 0x3d, 0x3d, 0x40	#letter g x7 y8														#pattern from bottom
 pResult:
   .align 2
 	.space 1024	
@@ -66,7 +66,7 @@ main:
 
   	
  
- #s0 - poczatek danych 
+ #s0 - start of data
  
 #Point* FindPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pResult);
  
@@ -86,10 +86,10 @@ main:
  	move		$s0, $v0
 	move		$s1, $v1
 	
+	
 	la		$a0, number
 	li		$v0, 4
 	syscall
-	
 	
 	move		$a0, $s1
 	li		$v0, 1
@@ -108,10 +108,10 @@ main:
 	syscall
 	
  	
-#s1 - liczba punktow
-#s0 - punkty
+#s1 - number of occurences
+#s0 - coordinates
 
-wypisz:
+print:
  	 beqz		$s1, end
  	 
  	 lw		$a0, ($s0)
@@ -133,7 +133,7 @@ wypisz:
  	 addiu		$s0, $s0, 8
 	
 	 subi		$s1, $s1, 1
-	 j		wypisz							
+	 j		print							
 
 end:
   	li $v0, 10		#end program
@@ -222,58 +222,59 @@ FindPattern:
   	or 	$t3, $t3, $t0
  
   	addu 	$s0, $s0, $t3			#move to the start of bitmap
-#s0 - poczatek bitmapy
+#s0 - start of bitmap
  
  widthBytes:
-  	lw		$t0, w
+  	lw	$t0, w
   	addiu 	$t0, $t0, 7
   	srl 	$t0, $t0, 3
   	addiu 	$t0, $t0, 3
   	srl 	$t0, $t0, 2
-  	sll		$t0, $t0, 2
+  	sll	$t0, $t0, 2
  
-  	sw 		$t0, wbytes
+  	sw 	$t0, wbytes
 	
 	move	$t1, $s0
 
-#t1 - adres poczatku wiersza
-#t2 - wysokosc wzorca
-#t3 - gdzie zapisujemy dane
+#t1 - start kine address
+#t2 - pattern height
+#t3 - writing data
 	
 
 	move	$t2, $a1
 	andi	$t2, 0x000000FF
-	move	$s7, $t2																					##$s7 - 
+	move	$s7, $t2																					 
 	
 	move	$t1, $a1
-	srl		$t1, $t1, 8
+	srl	$t1, $t1, 8
 	andi	$t1, 0x000000FF
 	move	$s6, $t1
 	
 	
-	## s6 - szerokoc wzorca
+	## s6 - pattern width
+	## s7 - pattern height
 
 	
 	move	$t9, $zero
-	li		$t8, 1
-	sll		$t8, $t8, 15
+	li	$t8, 1
+	sll	$t8, $t8, 15
 	move	$t7, $s6
 	
 	
 build_mask:	
-	or		$t9, $t9, $t8
-	srl		$t8, $t8, 1
+	or	$t9, $t9, $t8
+	srl	$t8, $t8, 1
 	subiu	$t7, $t7, 1
 	bgtz	$t7, build_mask
 	
 	move	$s5, $t9														
 
-#a0 - wolne
-#a1 - licznik punktow
+#a0 - free
+#a1 - point counter
 #a2 - pattern
-#a3 - adres potencjalnego punktu
+#a3 - address of point
 
-#t0 - szerokosc obrazu w bajtach
+#t0 - image width in bytes
 #t1 - temp
 #t2 - 
 #t3 - 
@@ -281,58 +282,58 @@ build_mask:
 #t5 - 
 #t6 - 
 #t7 - 
-#t8 - pole szukania pionowo
+#t8 - vertical search
 #t9 - 
 
 #s0 - 
-#s1 - maksymalne x, dla okna analizy
+#s1 - max x for analyse window
 #s2 - 
 #s3 - tmp
 #s4 - 
-#s5 - maska, stala
-#s6 - szerokosc wzorca, nie ruszac
-#s7 - wysokosc wzorca, nie ruszac
+#s5 - mask, const
+#s6 - pattern width
+#s7 - pattern height
 
 
-## s5 - maska
+## s5 - mask
 	
 
-#analyze_data - zrzut rejestru
+#analyze_data - registry dump
 	
 	
-#ustalenie szerokosci przeszukiwania
-	lw			$t4, w
-	sub			$t4, $t4, $s6							#odjecie od szerokosci obrazka w pixelach, szerokosci wzorca w pikselach
-	addi		$s1, $t4, 1								#korekcja
+#search width
+	lw		$t4, w
+	sub		$t4, $t4, $s6							#image width - pattern width (pixels)
+	addi		$s1, $t4, 1								#correction
 	
 	
-	move		$t2, $s7												#zliczanie wysokosci, wzorca
-#ustalenie wysokosci przeszukiwania	
-	lw			$t8, h									#wysokosc pikselowo
-	subu		$t8, $t8, $s7							#odjac wysokosc wzorca
-	addiu		$t8, $t8, 1								#plus jeden, korekcja
+	move		$t2, $s7								#height of pattern
+#search height
+	lw		$t8, h									#height in pixels
+	subu		$t8, $t8, $s7							#sub pattern height
+	addiu		$t8, $t8, 1								#correction
 	
-#t9 - licznik w pionie	
+#t9 - vertical counter
 	move		$t9, $zero
 	
 	move		$v1, $zero
 
 
 
-#korekcja masek
+#mask correction 
 
 
-	move		$s4, $a2												#ustawienie na poczatek paterna
-	la			$t5, wzorce	
+	move		$s4, $a2												#start of pattern
+	la		$t5, pattern	
 	
-	li			$t4, 16
-	sub			$t4, $t4, $s6											#t1 - o ile przesunac w lewo aby wzorzec dosunac do lewej strony drugiego bajtu [ 4 | 3 | 2 | 1]
+	li		$t4, 16
+	sub		$t4, $t4, $s6											#t1 - how much to shift left to move pattern to left of 2nd byte[ 4 | 3 | 2 | 1]
 	move		$t7, $s7
 shift_mask:
 	move		$t1, $zero
-	lbu			$t1, ($s4)
+	lbu		$t1, ($s4)
 	sllv		$t1, $t1, $t4
-	sw			$t1, ($t5)
+	sw		$t1, ($t5)
 
 	addiu		$s4, $s4, 1
 	addiu		$t5, $t5, 4
@@ -341,18 +342,18 @@ shift_mask:
 	
 
 
-	la			$a2, wzorce
+	la		$a2, pattern
 
 
 
-###GLOWNA PETLA
+#################MAIN LOOP#####################################
 
-#$s0 - adres analyze data
+#$s0 - adress of analyze data
 
 
-	la			$t3, analyze_data
+	la		$t3, analyze_data
 
-kolejna_linia:
+next_line:
 
 	move		$t5, $t3					
 	move		$a0, $s7
@@ -362,13 +363,13 @@ kolejna_linia:
 store_data:	
 
 	move		$t4, $zero
-	lbu			$t4, ($s2)
+	lbu		$t4, ($s2)
 	addu		$s2, $s2, $t0
 	
 	
-	sll			$t4, $t4, 8
+	sll		$t4, $t4, 8
 	
-	sw			$t4, ($t5)
+	sw		$t4, ($t5)
 	addiu		$t5, $t5, 4
 	
 	subiu		$a0, $a0, 1
@@ -378,148 +379,144 @@ store_data:
 	
 	
 	
-#a1 - aktualne x - poczatku wzorca
+#a1 - x start of pattern
 
-	move		$a1, $zero					#a1 - licznik pikseli w prawo, od 0	
+	move		$a1, $zero					#a1 - count pixels right, from 0	
 	move		$t7, $zero
 	
 	
-poziomo:		#przesuniecie okna porownania w prawo o 1 piksel
+horizontal:		#move analyse window by 1 pixel
 	
 	move		$t5, $t3
-	move		$s4, $a2												#ustawienie na poczatek paterna
-	la			$s4, wzorce
+	move		$s4, $a2												#start of pattern
+	la		$s4, pattern
 
 	addu		$s2, $s0, $t7
 	addu		$s2, $s2, 1
 	
-	move		$t2, $s7												#zliczanie wysokosci, wzorca
+	move		$t2, $s7												#height of pattern
 	
 	
 	
 	
-pionowo_z_wczytywaniem:
+horizontal_with_loading:
 
 	
-#t6 - tu bedzie wynik maskowania												
-	lw			$t6, ($t5)												#wczytanie dla i-tego wiersza
+#t6 - result of masking											
+	lw			$t6, ($t5)												#loading for i-th line
 
 
 	move		$t4, $zero
-	lbu			$t4, 0($s2)
-	
-	or			$t6, $t6, $t4
+	lbu		$t4, 0($s2)
+
+	or		$t6, $t6, $t4
 	
 	addu		$s2, $s2, $t0
 	
-	sll			$t6, $t6, 1
-	sw			$t6, ($t5)
-	srl			$t6, $t6, 1
-	addiu		$t5, $t5, 4												#przesuniecie adresu dla kolejnego wiersza
-	and			$t6, $t6, $s5											#t6 - wynik maskowania
-	lw			$t1, ($s4)
+	sll		$t6, $t6, 1
+	sw		$t6, ($t5)
+	srl		$t6, $t6, 1
+	addiu		$t5, $t5, 4												#move to next line
+	and		$t6, $t6, $s5											#t6 - result of masking
+	lw		$t1, ($s4)
 	addi		$s4, $s4, 4
 	
 	subi		$t2, $t2, 1
 	
-	bne			$t6, $t1, test_niemaskowanie2
-	bgtz		$t2, pionowo_z_wczytywaniem
+	bne		$t6, $t1, test_nomask2
+	bgtz		$t2, horizontal_with_loading
 	
 	
 	
 	
 	
-	sw			$a1, ($a3)
+	sw		$a1, ($a3)
 	addiu		$a3, $a3, 4
 	
-	sw			$t9, ($a3)
+	sw		$t9, ($a3)
 	addiu		$a3, $a3, 4
 	
 	addiu		$v1, $v1, 1
 	
 	
-	addiu		$a1, $a1, 1												#zwiekszenie x+=1
+	addiu		$a1, $a1, 1												#x++
 
-	beq			$a1, $s1, test_koniec
+	beq		$a1, $s1, test_end
 	
-	srl			$t7, $a1, 3												#t7 - numer aktualnego bajtu
-	sll			$s3, $t7, 3
-	sub			$a0, $a1, $s3
+	srl		$t7, $a1, 3												#t7 - number of current byte
+	sll		$s3, $t7, 3
+	sub		$a0, $a1, $s3
 	
-	beqz		$a0, poziomo	
-	j			poziomo2
+	beqz		$a0, horizontal	
+	j		horizontal2
+
 	
 	
-	
-niemaskowanie2:
-	lw			$t6, ($t5)												#wczytanie dla i-tego wiersza
+nomask2:
+	lw		$t6, ($t5)												#load for i-th line
 
 
-#sprawdzic i wywalic
 	move		$t4, $zero
-	lbu			$t4, 0($s2)
+	lbu		$t4, 0($s2)
 	
-	or			$t6, $t6, $t4
+	or		$t6, $t6, $t4
 	
 	addu		$s2, $s2, $t0
-#koniec sprawdzenia
 
 
-
-
-	sll			$t6, $t6, 1
-	sw			$t6, ($t5)
+	sll		$t6, $t6, 1
+	sw		$t6, ($t5)
 	addiu		$t5, $t5, 4	
 	
 	subi		$t2, $t2, 1
 	
-test_niemaskowanie2:	
+test_nomask2:	
 	
-	bgtz		$t2, niemaskowanie2
+	bgtz		$t2, nomask2
 	
 	addiu		$a1, $a1, 1
 
-	beq			$a1, $s1, test_koniec
+	beq		$a1, $s1, test_end
 	
-	srl			$t7, $a1, 3												#t7 - numer aktualnego bajtu
-	sll			$s3, $t7, 3
-	sub			$a0, $a1, $s3
+	srl		$t7, $a1, 3												#t7 - number of current byte
+	sll		$s3, $t7, 3
+	sub		$a0, $a1, $s3
 	
-	beqz		$a0, poziomo	
+	beqz		$a0, horizontal	
 	
 
 
 ############################################################################################################################
-poziomo2:
+horizontal2:
 
 	move		$t5, $t3
-	move		$s4, $a2												#ustawienie na poczatek paterna
-	move		$t2, $s7												#zliczanie wysokosci, wzorca
+	move		$s4, $a2												#start of pattern
+	move		$t2, $s7												#height of pattern
 
 
-pionowo_bez_wczytywania:
-	lw			$t6, ($t5)												#wczytanie dla i-tego wiersza
+vertical_no_load:
+	lw		$t6, ($t5)												#load for i-th line
 
-	sll			$t6, $t6, 1
-	sw			$t6, ($t5)
-	srl			$t6, $t6, 1
-	addiu		$t5, $t5, 4												#przesuniecie adresu dla kolejnego wiersza
+	sll		$t6, $t6, 1
+	sw		$t6, ($t5)
+	srl		$t6, $t6, 1
+	addiu		$t5, $t5, 4												#next line address
 	
-	and			$t6, $t6, $s5											#t6 - wynik maskowania
-	lw			$t1, ($s4)
+	and		$t6, $t6, $s5											#t6 -result of masking
+	lw		$t1, ($s4)
 	
 	addi		$s4, $s4, 4
 	subi		$t2, $t2, 1
 	
 	
 	
-	bne			$t6, $t1, test_niemaskowanie
-	bgtz		$t2, pionowo_bez_wczytywania
+	bne		$t6, $t1, test_nomask
+	bgtz		$t2, vertical_no_load
 	
-	sw			$a1, ($a3)
+	sw		$a1, ($a3)
 	addiu		$a3, $a3, 4
 	
-	sw			$t9, ($a3)
+	sw		$t9, ($a3)
 	addiu		$a3, $a3, 4
 	
 	addiu		$v1, $v1, 1
@@ -527,61 +524,60 @@ pionowo_bez_wczytywania:
 	
 	addiu		$a1, $a1, 1
 
-	beq			$a1, $s1, test_koniec
+	beq		$a1, $s1, test_end
 	
-	srl			$t7, $a1, 3												#t7 - numer aktualnego bajtu
-	sll			$s3, $t7, 3
-	sub			$a0, $a1, $s3
+	srl		$t7, $a1, 3												#t7 - number of current byte
+	sll		$s3, $t7, 3
+	sub		$a0, $a1, $s3
 	
-	beqz		$a0, poziomo	
-	j			poziomo2
+	beqz		$a0, horizontal	
+	j		horizontal2
 	
 	
 	
-niemaskowanie:
-	lw			$t6, ($t5)												#wczytanie dla i-tego wiersza
+nomask:
+	lw		$t6, ($t5)												#load for i-th line
 
-	sll			$t6, $t6, 1
-	sw			$t6, ($t5)
-	addiu		$t5, $t5, 4												#przesuniecie adresu dla kolejnego wiersza
+	sll		$t6, $t6, 1
+	sw		$t6, ($t5)
+	addiu		$t5, $t5, 4												#move to next line
 	
 	
 	addi		$s4, $s4, 4
 	
 	subi		$t2, $t2, 1
 	
-test_niemaskowanie:	
+test_nomask:	
 	
-	bgtz		$t2, niemaskowanie
+	bgtz		$t2, nomask
 	
 	addiu		$a1, $a1, 1
 
-	beq			$a1, $s1, test_koniec
+	beq		$a1, $s1, test_end
 	
-	srl			$t7, $a1, 3												#t7 - numer aktualnego bajtu
-	sll			$s3, $t7, 3
-	sub			$a0, $a1, $s3
+	srl		$t7, $a1, 3												#t7 - number of current byte
+	sll		$s3, $t7, 3
+	sub		$a0, $a1, $s3
 	
-	beqz		$a0, poziomo	
-	j			poziomo2
+	beqz		$a0, horizontal	
+	j		horizontal2
 	
 	
 
-test_koniec:
+test_end:
 
 
-
-	add			$s0, $s0, $t0
+	add		$s0, $s0, $t0
 
 	addiu		$t9, $t9, 1
 	
-	blt			$t9, $t8, kolejna_linia
+	blt		$t9, $t8, next_line
 	
-	la			$v0, pResult
+	la		$v0, pResult
 	
 	
 	lw 		$ra, 4($sp)		#restore (pop) $ra
-	add 	$sp, $sp, 4
+	add 		$sp, $sp, 4
 	jr 		$ra
 
 
