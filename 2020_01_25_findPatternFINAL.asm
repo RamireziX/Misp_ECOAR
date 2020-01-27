@@ -1,3 +1,5 @@
+#ALEXANDER WRZOSEK
+
 #ecoar misp project
 #search for a pattern 
 #black  & white image
@@ -15,7 +17,10 @@
   
   .data
 fname:  .asciiz "src_001.bmp"
-fnameout:  .asciiz "src_002.bmp"
+#fnameout:  .asciiz "src_002.bmp"
+number:  .asciiz "Number of occurences:\n"
+coor1:  .asciiz "Coordinates:\n"
+coor2:  .asciiz "x  y\n"
 
 imgInfo:
 w:	.word 32
@@ -29,7 +34,8 @@ wzorce:							.word 	0,0,0,0,0,0,0,0
 		
 
 ptrn:
-	.byte 0x00, 0x1B, 0x1B, 0x1B, 0x1B, 0x03, 0, 0																	#wzorzec od dolu
+	#.byte 0x00, 0x1B, 0x1B, 0x1B, 0x1B, 0x03, 0, 0	#letter i	x5 y6 	
+	.byte 0x43, 0x7d, 0x7d, 0x41, 0x3d, 0x3d, 0x3d, 0x40	#letter g x7 y8														#wzorzec od dolu
 pResult:
   .align 2
 	.space 1024	
@@ -64,8 +70,8 @@ main:
  
 #Point* FindPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pResult);
  
- 	li	$t1, 5			#sx
- 	li	$t2, 6 			#sy
+ 	li	$t1, 7			#sx
+ 	li	$t2, 8 			#sy
  	sll	$t1, $t1, 8
  	or	$t1, $t1, $t2
  
@@ -75,68 +81,59 @@ main:
  	la	$a3, pResult
  	
  	jal	FindPattern
-	
-	
-	move		$s0, $v0
+
+
+ 	move		$s0, $v0
 	move		$s1, $v1
+	
+	la		$a0, number
+	li		$v0, 4
+	syscall
 	
 	
 	move		$a0, $s1
-	li			$v0, 1
+	li		$v0, 1
 	syscall
 	
-	li			$a0, 10
-	li			$v0, 11
+	li		$a0, '\n'
+	li		$v0, 11
 	syscall
 	
-#	lw			$a0, ($s0)
-#	li			$v0, 1
-#	syscall
-	
-	li			$a0, 10
-	li			$v0, 11
+	la		$a0, coor1
+	li		$v0, 4
 	syscall
 	
-	add			$s0, $s0, 4
-	
-	
-#	lw			$a0, ($s0)
-#	li			$v0, 1
-#	syscall
-	
-	li			$a0, 10
-	li			$v0, 11
+	la		$a0, coor2
+	li		$v0, 4
 	syscall
 	
-	la 	$a0, fnameout
- 	li 	$a1, 1		#open file read only
- 	li 	$a2, 0
- 	li	$v0, 13 		
- 	syscall
+ 	
+#s1 - liczba punktow
+#s0 - punkty
+
+wypisz:
+ 	 beqz		$s1, end
+ 	 
+ 	 lw		$a0, ($s0)
+ 	 li		$v0, 1
+ 	 syscall
+ 	 
+ 	 li		$a0, ' '
+ 	 li		$v0, 11
+ 	 syscall
+ 	 
+ 	 lw		$a0, 4($s0)
+ 	 li		$v0, 1
+ 	 syscall
+ 	 
+ 	 li		$a0, 10
+ 	 li		$v0, 11
+ 	 syscall
+ 	 
+ 	 addiu		$s0, $s0, 8
 	
-	
-	
-	move 	$a0, $v0
-  	la 	$a1, fbuf
-  	li 	$a2, 44000
-  	li 	$v0, 15   		#save file
-  	syscall
-  	
-  	
-  	
- # 	li	$a3, 2345
- # 	mtc1	$a3, $f0
-  	
- # 	mfc1	$a0, $f0
- # 	li	$v0, 1
- #	syscall
-  	
-  	
-	
-	
-	
-	
-	
+	 subi		$s1, $s1, 1
+	 j		wypisz							
 
 end:
   	li $v0, 10		#end program
@@ -441,7 +438,7 @@ pionowo_z_wczytywaniem:
 	addiu		$v1, $v1, 1
 	
 	
-	addiu		$a1, $a1, 1
+	addiu		$a1, $a1, 1												#zwiekszenie x+=1
 
 	beq			$a1, $s1, test_koniec
 	
@@ -458,13 +455,18 @@ niemaskowanie2:
 	lw			$t6, ($t5)												#wczytanie dla i-tego wiersza
 
 
+#sprawdzic i wywalic
 	move		$t4, $zero
 	lbu			$t4, 0($s2)
 	
 	or			$t6, $t6, $t4
 	
 	addu		$s2, $s2, $t0
-	
+#koniec sprawdzenia
+
+
+
+
 	sll			$t6, $t6, 1
 	sw			$t6, ($t5)
 	addiu		$t5, $t5, 4	
